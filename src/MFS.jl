@@ -3,15 +3,15 @@ export MFS,MFSblock,MFSfile,@ipfs_str
 
 abstract type MFS end
 struct MFSfile <:MFS
-       name::String
-       cid::String
-       Size::Int
+    name::String
+    cid::String
+    Size::Int
 end
 struct MFSblock <:MFS
-       file::MFSfile
-       CumulativeSize::Int
-       ChildBlocks::Int
-       MFStype::String
+    file::MFSfile
+    CumulativeSize::Int
+    ChildBlocks::Int
+    MFStype::String
 end
 getcid(mfs::MFSfile)::String=mfs.cid
 getcid(mfs::MFSblock)::String=mfs.file.cid
@@ -26,13 +26,16 @@ end
 
 function cp(source::String,dest::String;parents::Bool=false)
     if parents
-            run(`$ipfscommand files cp -p $(choosepath(source)) $(choosepath(dest))`)
+        run(`$ipfscommand files cp -p $(choosepath(source)) $(choosepath(dest))`)
     else
-            run(`$ipfscommand files cp $(choosepath(source)) $(choosepath(dest))`)
+        run(`$ipfscommand files cp $(choosepath(source)) $(choosepath(dest))`)
     end
 end
+function cp(source::MFS,dest::String;parents::Bool=false)
+    cp("/ipfs/"*getcid(source),dest;parents)
+end
 
-function cp(path::String;recursive::Bool=false)
+function rm(path::String;recursive::Bool=false)
     if recursive
         run(`$ipfscommand files rm -r $(choosepath(path))`)
     else
@@ -46,9 +49,9 @@ end
 function ls(path::String;join::Bool=false)
     res=split(readchomp(`$ipfscommand files ls $(choosepath(path))`),"\n")
     if join
-            pwd.*res
+        pwd.*res
     else
-            res
+        res
     end
 end
 
@@ -58,12 +61,12 @@ function _MFSfile(items::SubString)
     MFSfile(i[1],i[2],parseint(i[3]))
 end
 function MFSfile(res::SubString)
-       [_MFSfile(i) for i in split(res, "\n")]
+    [_MFSfile(i) for i in split(res, "\n")]
 end
 
 function readdir(path::String)
-       res=readchomp(`$ipfscommand files ls -l $(choosepath(path))`)
-       MFSfile(res)
+    res=readchomp(`$ipfscommand files ls -l $(choosepath(path))`)
+    MFSfile(res)
 end
 function MFSblock(name::String,
     cid::AbstractString,
@@ -79,8 +82,8 @@ function MFSblock(name::String,res::AbstractString)
     MFSblock(name,res[1],map(x->split(x,": ")[2],res[2:end])...)
 end
 function stat(path::String)
-       res=readchomp(`$ipfscommand files stat $(choosepath(path))`)
-       MFSblock(basename(path),res)
+    res=readchomp(`$ipfscommand files stat $(choosepath(path))`)
+    MFSblock(basename(path),res)
 end
 
 function mv(source::String,dest::String)
