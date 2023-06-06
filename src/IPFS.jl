@@ -5,14 +5,14 @@ export ipfscommand,
     toUrl,toLocalUrl,@ipfscli_str
 
 ipfscommand=if Sys.islinux()
-    `ipfs`
+    "ipfs"
 elseif Sys.iswindows()
-    `ipfs.exe`
+    "ipfs.exe"
 end
 const localgate=Ref("")
 
 macro ipfscli_str(expr)
-    c=`$ipfscommand $expr`
+    c=Cmd(String[ipfscommand,split(expr)...])
     :(run($c))
 end
 

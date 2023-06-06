@@ -14,13 +14,19 @@ struct MFSblock <:MFS
     MFStype::String
 end
 getcid(mfs::MFSfile)::String=mfs.cid
-getcid(mfs::MFSblock)::String=mfs.file.cid
+getcid(mfs::MFSblock)::String=getcid(mfs.file)
+getname(mfs::MFSfile)::String=mfs.name
+getname(mfs::MFSblock)::String=getname(mfs.file)
 
 function cd(path::String)
+	global pwd
     if path==".."
-        pwd=splitdir(pwd)[begin]
+        pwd=splitdir(pwd[begin:end-1])[begin]
     else
         pwd=choosepath(path)
+    end
+    if pwd[end]!="/"
+        pwd*="/"
     end
 end
 
@@ -96,13 +102,43 @@ function mkpath(path::String)
     run(`$ipfscommand files mkdir -p $(choosepath(path))`)
 end
 
-function add(file::String)
-    res=read(`$ipfscommand add $file --to-files $pwd`)
-    String(res[7:52])
+function _add(file::String;recursive::Bool=false,progress=true,quiet=false,
+    pin=false)
+    cmdhead=[ipfscommand,"add"]
+    push!(cmdhead,file)
+	if recursive
+        push!(cmdhead,"--recursive")
+    end
+    if !progress
+        push!(cmdhead,"--progress=false")
+    end
+    if !quiet
+        push!(cmdhead,"--quiet=false")
+    end
+    if !pin
+        push!(cmdhead,"--pin=false")
+    end
+    cmdhead
 end
-function add(file::String,path::String)
-    res=read(`$ipfscommand add $file --to-files $(choosepath(path))`)
-    String(res[7:52])
+function add(file::String;recursive::Bool=false,progress::Bool=true,quiet::Bool=false,
+    pin::Bool=false,addReference::Bool=true)
+    cmdhead=_add(file;recursive,progress,quiet,pin)
+    if addReference
+        push!(cmdhead,"--to-files",pwd)
+    end
+    res=read(Cmd(cmdhead))
+    # String(res[7:52])
+    String(res)
+end
+function add(file::String,path::String;recursive::Bool=false,progress::Bool=true,quiet::Bool=false,
+    pin::Bool=false,addReference::Bool=true)
+    cmdhead=_add(file;recursive,progress,quiet,pin)
+    if addReference
+        push!(cmdhead,"--to-files",choosepath(path))
+    end
+    res=read(Cmd(cmdhead))
+    # String(res[7:52])
+    String(res)
 end
 
 macro ipfs_str(expr)
