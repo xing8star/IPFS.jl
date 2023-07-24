@@ -2,59 +2,17 @@ module IPFS
 using Artifacts
 
 export ipfscommand,
-    toUrl,toLocalUrl,@ipfscli_str
-
-ipfscommand=if Sys.islinux()
-    "ipfs"
-elseif Sys.iswindows()
-    "ipfs.exe"
-end
-const localgate=Ref("")
+    toUrl,toLocalUrl,@ipfscli_str,
+    IPFSObject
 
 macro ipfscli_str(expr)
     c=Cmd(String[ipfscommand,split(expr)...])
     :(run($c))
 end
-
+include("OtherTools.jl")
+using .MyTools
+using .MyTools:parseint
 pwd="/"
-
-function checkenvvar()
-    Base.get(ENV, "IPFS_PATH") do
-        ENV["IPFS_PATH"]=abspath("./.repo")
-    end
-end
-parseint(s)=parse(Int,s)
-function __init__()
-    checkenvvar()
-    try
-        run(ipfscommand;wait=false)
-    catch ex
-        if ex isa Base.IOError
-            ipfscommand=artifact"kubo"
-            ipfscommand=joinpath(ipfscommand,"kubo")
-            ipfscommand=if Sys.islinux()
-                joinpath(ipfscommand,"ipfs")
-            elseif Sys.iswindows()
-                joinpath(ipfscommand,"ipfs.exe")
-            end
-        end
-    end
-    localgate[]="localhost:"*string(localserverport())
-end
-function daemon()
-    res=run(`$ipfscommand daemon`;wait=false)
-    if res.exitcode==1
-        @info "Initial repo"  
-        run(`$ipfscommand init`)
-        res=run(`$ipfscommand daemon`;wait=false)
-    end
-    res
-end
-include("MFS.jl")
-
-function shutdown()
-    run(`ipfs shutdown`)
-end
 function choosepath(path::String)
     if isabspath(path)
         path
@@ -63,18 +21,53 @@ function choosepath(path::String)
     end
 end
 
-include("cid.jl")
+ipfscommand=determinecommand("ipfs")
+localgate="localhost:8080"
+function checkenvvar()
+    Base.haskey(ENV, "IPFS_PATH")||(ENV["IPFS_PATH"]=abspath(".repo"))
+end
+
+function __init__()
+    checkenvvar()
+    try
+        run(ipfscommand;wait=false)
+    catch ex
+        if ex isa Base.IOError
+            ipfscommand=artifact"kubo"
+            ipfscommand=joinpath(ipfscommand,"kubo")
+            ipfscommand=determinecommand(ipfscommand)
+        end
+    end
+end
+function daemon(;waitseconds=nothing)
+    if !isdir(ENV["IPFS_PATH"])
+        @info "Initial repo"  
+        run(`$ipfscommand init`)
+    end
+    global daemon_process=run(`$ipfscommand daemon`;wait=false)
+    isnothing(waitseconds)||(sleep(waitseconds))
+    daemon_process
+end
+function shutdown()
+    run(`$ipfscommand shutdown`)    
+end
+
+include("IPFSObject.jl")
+include("MFS.jl")
+include("Basic.jl")
 
 function toUrl(cid::String,webgate::String)
     webgate*"/ipfs/"*cid
 end
 
-function toUrl(cid::MFS,webgate::String)
-    toUrl(getcid(cid),webgate)
+function toUrl(mfs::MFS,webgate::String)
+    toUrl(cid(mfs),webgate)
 end
-
+function toUrl(webgate::String)
+    x->toUrl(cid(x),webgate)
+end
 function toLocalUrl(cid::Union{String,MFS})
-    toUrl(cid,localgate[])
+    toUrl(cid,localgate)
 end
 
 include("Config.jl")

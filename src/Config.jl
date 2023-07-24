@@ -22,7 +22,9 @@ localserver()=ipfsconfig."Addresses.Gateway"
 
 function localserverport()
     res=read(`$ipfscommand config Addresses.Gateway`)
-    (parseint∘String)(res[end-4:end-1])
+    res=(parseint∘String)(res[end-4:end-1])
+    global localgate="localhost:"*res
+    res
 end
 
 function changeconfig(old_new::Pair...)
