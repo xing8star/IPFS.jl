@@ -27,12 +27,14 @@ function download(ref::String;output::Union{Nothing,String}=nothing,compress::Bo
         push!(cmdhead,"--progress=false")
     end
     if !isnothing(output)
+        local t=splitdir(output)[1]
+        Base.isdir(t)||Base.mkpath(t)
         push!(cmdhead,"--output=$output")
     end
     push!(cmdhead,ref)
     run(Cmd(cmdhead))
 end
-download(cid::AbstractIPFSObject;output=nothing,kwargs...)=download(cid(cid);output=isnothing(output) ? name(cid) : output,
+download(s::AbstractIPFSObject;output=nothing,kwargs...)=download(cid(s);output=isnothing(output) ? name(s) : output,
     kwargs...)
 function lsblock(ref::String)
     res=split(readchomp(`$ipfscommand ls $ref`),"\n")
@@ -75,7 +77,7 @@ ls(ref::AbstractIPFSObject)=lsblock(cid(ref))
 function toIPFSPath(cid::AbstractString)
     "/ipfs/$cid"
 end
-toIPFSPath(s::AbstractIPFSObject)=cid(s)
+toIPFSPath(s::AbstractIPFSObject)=cid(s)|>toIPFSPath
 function base32(cid::String)
     readchomp(`$ipfscommand cid base32 $cid`)
 end

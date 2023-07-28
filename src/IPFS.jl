@@ -1,5 +1,5 @@
 module IPFS
-using Artifacts
+using LazyArtifacts
 
 export ipfscommand,
     toUrl,toLocalUrl,@ipfscli_str,

@@ -1,19 +1,20 @@
 [[kubo]]
 arch = "x86_64"
-git-tree-sha1 = "9ef60444ed271364cf79a26c304fbd9cbfdbf353"
-os = "linux"
+git-tree-sha1 = "b45e030c996c87f096c6124ebbc27bafe4d7bdc4"
 lazy = true
+os = "windows"
 
     [[kubo.download]]
-    sha256 = "46f3f14d75640dfedb0ee79ccb87eefa30da5c00b0af2c30f02f13454f5ab072"
-    url = "https://dist.ipfs.tech/kubo/v0.20.0/kubo_v0.20.0_linux-amd64.tar.gz"
-    
+    sha256 = "bf95ab909933ce0704d9b19b393d46e310d509cb8f7d27a522b444a998bf49d5"
+    url = "https://dist.ipfs.tech/kubo/v0.21.0/kubo_v0.21.0_windows-amd64.zip"
 [[kubo]]
 arch = "x86_64"
-git-tree-sha1 = "05db93ec456962d331e8d210844fb2aa7ea5928f"
-os = "windows"
+git-tree-sha1 = "25564d773fd56feec7d11cd0410a4f45879d7a09"
 lazy = true
+libc = "glibc"
+os = "linux"
 
     [[kubo.download]]
-    sha256 = "61e7f34a7a4ef5a8881ec7f17b5474abf52416b1a9f7234d2c501b27fd92bafa"
-    url = "https://dist.ipfs.tech/kubo/v0.20.0/kubo_v0.20.0_windows-amd64.zip"
+    sha256 = "b1897919a4f6dd299d6c73dec8e4be98f986e4071eeffaefadf921f26e271c4e"
+    url = "https://dist.ipfs.tech/kubo/v0.21.0/kubo_v0.21.0_linux-amd64.tar.gz"
+   # http://localhost:8080/ipfs/QmauqFgX64x4zpZ8R7FeyL5p9RhDRd9FRs4zvDnyJQMRmx?filename=

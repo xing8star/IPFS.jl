@@ -5,8 +5,9 @@ CIDInfo2,
 CIDInfo3,
 AbstractIPFSObjectInfo,
 @ipfs_str,
-cid,name
-
+cid,name,
+isfileordir
+using FilePathsBase
 abstract type MFS<:AbstractIPFSObject end
 abstract type FSType end
 struct File<:FSType end
@@ -31,6 +32,9 @@ struct UnixFS{FSType,T<:AbstractIPFSObjectInfo} <:MFS
     info::T
 end
 name(info::AbstractIPFSObjectInfo)=info.name
+name(::EmptyInfo)=nothing
+name(s::UnixFS{T,EmptyInfo}) where T=cid(s)
+
 function MFStype(s::AbstractString)
     if s=="directory"||endswith(s,"/")
         Directory
@@ -91,21 +95,29 @@ Base.isdir(::UnixFS{Directory})::Bool=true
 Base.isfile(::UnixFS{File})::Bool=true
 Base.isfile(::UnixFS)::Bool=false
 
-function isexiteddir(path::AbstractString)::Bool
-    t=stat(path)
-    isnothing(t) ? false : Base.isdir(t)
+function isexitedfileordir(path::AbstractString)::Bool
+    local list
+    # a,b=splitdir(path)
+    try
+        ls(path)
+    catch
+        false
+    else
+        true
+    end
+    # if b in 
+    #     true
+    # else
+    #     false
+    # end
 end
-function isexitedfile(path::AbstractString)::Bool
-    t=stat(path)
-    isnothing(t) ? false : Base.isfile(t)
-end
-IPFS.isdir(path::AbstractString,::Bool)::Bool=isexiteddir(choosepath(path))
-IPFS.isfile(path::AbstractString,::Bool)::Bool=isexitedfile(choosepath(path))
+isfileordir(path::AbstractString)::Bool=isexitedfileordir(choosepath(path))
 
 function cd(path::String)
 	global pwd
     pwd=if path==".."
-        splitdir(pwd[begin:end-1])[begin]
+        # splitdir(pwd[begin:end-1])[begin]
+        Path(pwd)|>parent|>string
     elseif path=="."
         pwd
     elseif path=="/"
@@ -113,8 +125,8 @@ function cd(path::String)
     else
         choosepath(path)
     end
-    if pwd[end]!="/"
-        pwd*="/"
+    if pwd[end]!='/'
+        pwd*='/'
     end
     pwd
 end
@@ -129,7 +141,9 @@ end
 function cp(source::AbstractIPFSObject,dest::String;parents::Bool=false)
     cp(toIPFSPath(source),dest;parents)
 end
-
+function cp(source::MFS,dest::String;parents::Bool=false)
+    cp(toIPFSPath(source),joinpath(choosepath(dest),name(source));parents)
+end
 function rm(path::String;recursive::Bool=false)
     if recursive
         run(`$ipfscommand files rm -r $(choosepath(path))`)
@@ -235,7 +249,7 @@ function add(file::String,path::String;recursive::Bool=false,progress::Bool=fals
     end
     res=read(Cmd(cmdhead))
     # String(res[7:52])
-    String(res[begin:end-2])
+    String(res[begin:end-1])
 end
 function add(file::String;kwargs...)
     add(file,pwd;kwargs...)
