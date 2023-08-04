@@ -117,7 +117,7 @@ function cd(path::String)
 	global pwd
     pwd=if path==".."
         # splitdir(pwd[begin:end-1])[begin]
-        Path(pwd)|>parent|>string
+        PosixPath(pwd)|>parent|>string
     elseif path=="."
         pwd
     elseif path=="/"
@@ -158,7 +158,7 @@ end
 function ls(path::String;join::Bool=false)
     res=split(readchomp(`$ipfscommand files ls $(choosepath(path))`),"\n")
     if res==[""]
-        return res
+        return String[]
     end
     if join
         joinpath(pwd,path*"/").*res

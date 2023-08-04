@@ -38,7 +38,7 @@ download(s::AbstractIPFSObject;output=nothing,kwargs...)=download(cid(s);output=
     kwargs...)
 function lsblock(ref::String)
     res=split(readchomp(`$ipfscommand ls $ref`),"\n")
-    if res==[""]
+    if isempty(res)
         return nothing
     end
     map(res) do x 
@@ -89,21 +89,17 @@ toBaseUrl(ref::AbstractIPFSObject,a...)=toBaseUrl(base32(ref),a...)
 struct TimeoutError <: Exception
     readtimeout::Int
 end
-function get(s::AbstractIPFSObject,readtimeout::Integer=3,length::Integer=0;
-    response_stream=nothing)
-    cmdhead=[ipfscommand,"cat"]
+function get(s::AbstractIPFSObject,readtimeout::Timeout=TIMEOUT,length::Integer=0;
+    response_stream=nothing,ignorestatus=true)
+    cmdhead=String[ipfscommand,readtimeout,"cat"]
     if !iszero(length)
         push!(cmdhead,"-l",string(length))
     end
     push!(cmdhead,cid(s))
-    t=@async read(Cmd(Cmd(cmdhead),ignorestatus=true))
-    if !istaskdone(t)
-        sleep(readtimeout)
-        istaskdone(t)||(throw(TimeoutError(readtimeout)))
-    end
+    t=read(Cmd(Cmd(cmdhead);ignorestatus))
     if !isnothing(response_stream)
-        write(response_stream,fetch(t))
+        write(response_stream,t)
         return response_stream
     end
-    fetch(t)
+    t
 end

@@ -26,19 +26,19 @@ localgate="localhost:8080"
 function checkenvvar()
     Base.haskey(ENV, "IPFS_PATH")||(ENV["IPFS_PATH"]=abspath(".repo"))
 end
-
+include("Timeout.jl")
 function __init__()
+    global ipfscommand
     checkenvvar()
-    try
-        run(ipfscommand;wait=false)
-    catch ex
-        if ex isa Base.IOError
-            ipfscommand=artifact"kubo"
-            ipfscommand=joinpath(ipfscommand,"kubo")
-            ipfscommand=determinecommand(ipfscommand)
-        end
+    if isnothing(Sys.which(ipfscommand))
+        @warn "IPFS command not found. Trying to use local IPFS daemon"
+        ipfscommand=artifact"kubo"
+        ipfscommand=joinpath(ipfscommand,"kubo","ipfs")
+        ipfscommand=determinecommand(ipfscommand)
     end
+    # ipfscommand=[ipfscommand,"--timeout=10s"]
 end
+
 function daemon(;waitseconds=nothing)
     if !isdir(ENV["IPFS_PATH"])
         @info "Initial repo"  
