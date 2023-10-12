@@ -39,6 +39,10 @@ function __init__()
     # ipfscommand=[ipfscommand,"--timeout=10s"]
 end
 
+"""
+    daemon(;waitseconds=nothing)
+Set "waitseconds" will wait for seconds after call this.
+"""
 function daemon(;waitseconds=nothing)
     if !isdir(ENV["IPFS_PATH"])
         @info "Initial repo"  
@@ -56,6 +60,11 @@ include("IPFSObject.jl")
 include("MFS.jl")
 include("Basic.jl")
 
+"""
+    toUrl(cid,webgate::String)
+convert any contains `cid` to url.
+`webgate` is the host.
+"""
 function toUrl(cid::String,webgate::String)
     webgate*"/ipfs/"*cid
 end
