@@ -222,9 +222,10 @@ function mkpath(path::String)
     run(`$ipfscommand files mkdir -p $(choosepath(path))`)
 end
 
-function _add(file::String;recursive::Bool=false,progress=true,quiet=false,
+function _add(file::String;recursive::Bool=false,progress=true,
+    # quiet=false,
     pin=false)
-    cmdhead=[ipfscommand,"add"]
+    cmdhead=[ipfscommand,"add","--quiet"]
     push!(cmdhead,file)
 	if recursive
         push!(cmdhead,"--recursive")
@@ -232,18 +233,21 @@ function _add(file::String;recursive::Bool=false,progress=true,quiet=false,
     if !progress
         push!(cmdhead,"--progress=false")
     end
-    if quiet
-        push!(cmdhead,"--quiet")
-    end
+    # if quiet
+    #     push!(cmdhead,"--quiet")
+    # end
     if !pin
         push!(cmdhead,"--pin=false")
     end
     cmdhead
 end
 
-function add(file::String,path::String;recursive::Bool=false,progress::Bool=false,quiet::Bool=true,
+function add(file::String,path::String;recursive::Bool=false,progress::Bool=false,
+    # quiet::Bool=true,
     pin::Bool=false,addReference::Bool=true)
-    cmdhead=_add(file;recursive,progress,quiet,pin)
+    cmdhead=_add(file;recursive,progress,
+    # quiet,
+    pin)
     if addReference
         push!(cmdhead,"--to-files",choosepath(path))
     end

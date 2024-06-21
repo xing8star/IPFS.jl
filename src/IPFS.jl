@@ -12,7 +12,7 @@ end
 include("OtherTools.jl")
 using .MyTools
 using .MyTools:parseint
-pwd="/"
+pwd::String="/"
 function choosepath(path::String)
     if isabspath(path)
         path
@@ -21,8 +21,9 @@ function choosepath(path::String)
     end
 end
 
-ipfscommand=determinecommand("ipfs")
-localgate="localhost:8080"
+ipfscommand::String=determinecommand("ipfs")
+ipfs_cmd_formatted::Vector{String}=[ipfscommand,"--enc","json"]
+localgate::String="localhost:8080"
 function checkenvvar()
     Base.haskey(ENV, "IPFS_PATH")||(ENV["IPFS_PATH"]=abspath(".repo"))
 end
@@ -39,6 +40,7 @@ function __init__()
     # ipfscommand=[ipfscommand,"--timeout=10s"]
 end
 
+const daemon_process=Ref{Base.Process}()
 """
     daemon(;waitseconds=nothing)
 Set "waitseconds" will wait for seconds after call this.
@@ -48,15 +50,16 @@ function daemon(;waitseconds=nothing)
         @info "Initial repo"  
         run(`$ipfscommand init`)
     end
-    global daemon_process=run(`$ipfscommand daemon`;wait=false)
+    daemon_process[]=run(`$ipfscommand daemon`;wait=false)
     isnothing(waitseconds)||(sleep(waitseconds))
-    daemon_process
+    daemon_process[]
 end
 function shutdown()
     run(`$ipfscommand shutdown`)    
 end
 
 include("IPFSObject.jl")
+include("Block.jl")
 include("MFS.jl")
 include("Basic.jl")
 

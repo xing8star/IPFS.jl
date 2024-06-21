@@ -1,12 +1,12 @@
 export IPFSConfig,ipfsconfig,peerid,
 localserverport,
-changeconfig,
-changelistenip
+boardcastip
 
 struct IPFSConfig
     # configpath::AbstractString
 end
 const ipfsconfig=IPFSConfig()
+Base.pathof(::IPFSConfig)=ENV["IPFS_PATH"]
 function Base.getproperty(::IPFSConfig,name::Symbol)
     # if name==:configpath
     #     return getfield(values)
@@ -17,8 +17,8 @@ function Base.getproperty(::IPFSConfig,name::String)
     readchomp(`$ipfscommand config $name`)
 end
 
-peerid()=ipfsconfig."Identity.PeerID"
-localserver()=ipfsconfig."Addresses.Gateway"
+peerid(x::IPFSConfig)=x."Identity.PeerID"
+localserver(x::IPFSConfig)=x."Addresses.Gateway"
 
 function localserverport()
     res=read(`$ipfscommand config Addresses.Gateway`)
@@ -27,14 +27,13 @@ function localserverport()
     res
 end
 
-function changeconfig(old_new::Pair...)
-    newconfig=replace(ipfsconfig.show, old_new..., count=1)
-    open(joinpath(ENV["IPFS_PATH"],"config"),"w") do f
+function Base.replace!(x::IPFSConfig,old_new::Pair...)
+    newconfig=replace(x.show, old_new..., count=1)
+    open(joinpath(pathof(x),"config"),"w") do f
         write(f,newconfig)
     end
-
 end
 
-function changelistenip()
-    changeconfig("/ip4/127.0.0.1/tcp/8080" => "/ip4/0.0.0.0/tcp/8080")
+function boardcastip(x::IPFSConfig)
+    replace!(x,"/ip4/127.0.0.1/tcp/8080" => "/ip4/0.0.0.0/tcp/8080")
 end

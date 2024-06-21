@@ -1,7 +1,7 @@
 export lsblock,
 blockstat,
 iscid
-
+using SafeThrow
 const qmprefix=startswith("Qm")
 
 """
@@ -142,6 +142,7 @@ toBaseUrl(ref::AbstractIPFSObject,a...)=toBaseUrl(base32(ref),a...)
 struct TimeoutError <: Exception
     readtimeout::Int
 end
+Base.convert(::Type{TimeoutError},s::Timeout)=TimeoutError(s.num)
 
 struct IntergerOption
     optionname::String
@@ -158,12 +159,9 @@ Base.push!(cmds::Vector{String},i::IntergerOption)=if i.value>0 push!(cmds,strin
 
 Base.convert(::Type{String},s::IntergerOption)=string(s)
 
-"""
-    get(s::AbstractIPFSObject,readtimeout::Timeout=TIMEOUT,length::Integer=0;response_stream=nothing,ignorestatus=true)
 
-    return `response_stream` of the data contained by an IPFS or IPNS object(s) at the given path.
-"""
-function get(s::AbstractIPFSObject,readtimeout::Timeout=TIMEOUT,length::Integer=0;
+
+@add_safefunction function get(s::AbstractIPFSObject,readtimeout::Timeout=TIMEOUT,length::Integer=0;
     response_stream=nothing,offset::Int=0,ignorestatus=true)
     cmdhead=String[ipfscommand,readtimeout,"cat"]
     # filter(!=(""),
@@ -171,9 +169,34 @@ function get(s::AbstractIPFSObject,readtimeout::Timeout=TIMEOUT,length::Integer=
     push!(cmdhead,IntergerOption("offset",offset))
     push!(cmdhead,cid(s))
     t=read(Cmd(Cmd(cmdhead);ignorestatus))
+    if !ignorestatus
+        throw(TimeoutError(readtimeout))
+    end
     if !isnothing(response_stream)
         write(response_stream,t)
         return response_stream
     end
     t
+end
+
+"""
+    get(s::AbstractIPFSObject,readtimeout::Timeout=TIMEOUT,length::Integer=0;response_stream=nothing,ignorestatus=true)
+
+    return `response_stream` of the data contained by an IPFS or IPNS object(s) at the given path.
+"""
+get
+
+function hash(path::AbstractString)
+    cmdhead=[ipfscommand,"add","-Q","-n",choosepath(path)]
+    res=read(Cmd(cmdhead))
+    String(res[begin:end-1])
+end
+
+function islocalblock(s::AbstractIPFSBlock)
+    cmdhead=String[ipfscommand,Timeout(10,"ms"),"block","stat",cid(s)]
+    if run(Cmd(cmdhead);wait=false).exitcode!=0
+        false
+    else
+        true
+    end
 end
